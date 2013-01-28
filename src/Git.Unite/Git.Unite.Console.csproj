@@ -63,7 +63,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>xcopy $(SolutionDir)packages\LibGit2Sharp.0.9.5\NativeBinaries\* $(TargetDir)NativeBinaries /I /S</PostBuildEvent>
+    <PostBuildEvent>xcopy $(SolutionDir)packages\LibGit2Sharp.0.9.5\NativeBinaries\* $(TargetDir)NativeBinaries /I /S /Y</PostBuildEvent>
   </PropertyGroup>
   <Import Project="$(SolutionDir)\.nuget\nuget.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
