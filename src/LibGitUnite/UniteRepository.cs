@@ -66,8 +66,15 @@ namespace LibGitUnite
                 var from = keyValuePair.Key.Item1;
                 var to = keyValuePair.Value.Item1;
 
-                _removeFromIndex.Invoke(Index, new object[] { from });
-                _addToIndex.Invoke(Index, new object[] { to });
+                try
+                {
+                    _removeFromIndex.Invoke(Index, new object[] {from});
+                    _addToIndex.Invoke(Index, new object[] {to});
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("error changing: {0} -> {1} [{2}]", from, to, ex.Message);
+                }
             }
 
             _updatePhysicalIndex.Invoke(Index, new object[] {});
