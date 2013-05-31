@@ -12,15 +12,16 @@ namespace LibGitUnite
         /// <summary>
         /// Unite the git repository index file paths with the same case the OS is using
         /// </summary>
-        /// <param name = "path">
+        /// <param name = "gitPath">
         ///   The path to the git repository to open, can be either the path to the git directory (for non-bare repositories this
         ///   would be the ".git" folder inside the working directory) or the path to the working directory.
         /// </param>
         /// <param name="dryrun">dry run without making changes</param>
-        public static void Process(string path, bool dryrun)
+        public static void Process(string gitPath, bool dryrun)
         {
             // Build a list of directory names as seen by the host operating system
             List<string> folders;
+            var path = new DirectoryInfo(gitPath).FullName;
 
             try
             {
