@@ -32,7 +32,11 @@ How To Build It?
 ----------------
 From a command window run: *build.bat*
 
+On some systems you will need to run 'set EnableNuGetPackageRestore=true' to succesfully compile.
+
 Otherwise, open the Solution file in Visual Studio 2010 and Build
+
+The binary will be in git-unite\src\Git.Unite\bin\Debug
 
 Thanks
 ------
