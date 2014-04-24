@@ -94,10 +94,10 @@ namespace LibGitUnite
                     {
                         Console.WriteLine("error changing: {0} -> {1} [{2}]", from, to, ex.Message);
                     }
+
+                    _updatePhysicalIndex.Invoke(Index, new object[] { });
                 }
             }
-
-            _updatePhysicalIndex.Invoke(Index, new object[] {});
         }
     }
 }

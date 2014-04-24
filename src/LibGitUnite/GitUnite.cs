@@ -113,7 +113,7 @@ namespace LibGitUnite
             {
                 var sourcePath = repo.Info.WorkingDirectory + entry.Path;
 
-                // Match host OS folder based on minimum length to find top level directory to target
+                // Match host OS filename based on full pathname ignoring case
                 var target = files.FirstOrDefault(f => String.Equals(f.FullName, sourcePath, StringComparison.CurrentCultureIgnoreCase));
                 if (target == null) continue;
 
