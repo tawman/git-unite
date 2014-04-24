@@ -1,12 +1,12 @@
 Git.Unite
 =========
-Git Unite is a utility that fixes case sensitive file paths present in a git repository index on Windows. Since Windows is not case sensitive, the git index case sensitivity issue does not manifest itself until browsing the code repository on GitHub or cloning the repository to a case sensitive file system on Linux.
+Git Unite is a utility that fixes case sensitive file names and paths present in a git repository index on Windows. Since Windows is not case sensitive, the git index case sensitivity issue does not manifest itself until browsing the code repository on GitHub or cloning the repository to a case sensitive file system on Linux.
 
 Introducing case sensitive file paths into the git index on a case insensitive operating system like Windows is easier than you think. A simple *git mv .\Where\Waldo where\is\Waldo* is all you need to create two separate paths in the git index, but the Windows working directory will only report one. There might be git config settings that help avoid this problem, but controlling the settings and behavior of 20+ contributors on a project team is nearly impossible.
 
 The problem is exacerbated when hundreds of files are moved during a repository layout reorganization. If the user moving the files is not careful, these case sensitive path names will pollute the git index but appear fine in the working directory. Cleaning up these case sensitive file path issues on Windows is tedious, and this is where Git Unite helps out.
 
-Git Unite will search the git repository index for file paths that do not match the same case that Windows is using. For each git index path case mismatch found, Git Unite will update the git index entry with the case reported by the Windows file system.
+Git Unite will search the git repository index for file names and paths that do not match the same case that Windows is using. For each git index path case mismatch found, Git Unite will update the git index entry with the case reported by the Windows file system.
 
     Usage: Git.Unite [OPTIONS]+ repository
     Unite the git repository index file paths with current Windows case usage.
@@ -14,6 +14,8 @@ Git Unite will search the git repository index for file paths that do not match 
     
     Options:
           --dry-run              dry run without making changes
+      -d, --directory-only       only perform directory case changes
+      -f, --file-only            only perform filename case changes
       -h, --help                 show this message and exit
 
 Example Usage

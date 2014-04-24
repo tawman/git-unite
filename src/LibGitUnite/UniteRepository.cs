@@ -11,6 +11,15 @@ namespace LibGitUnite
         private readonly MethodInfo _removeFromIndex;
         private readonly MethodInfo _addToIndex;
         private readonly MethodInfo _updatePhysicalIndex;
+        private readonly int _options;
+
+        /// <summary>
+        /// Perform a dry run (--dry-run) only and report proposed changes
+        /// </summary>
+        private bool DryRunOnly
+        {
+            get { return (_options & GitUnite.OptionFlags.DryRun) == GitUnite.OptionFlags.DryRun; }
+        }
 
         /// <summary>
         /// Extended LibGit2Sharp.Repository with the Unite version of the Move command
@@ -19,8 +28,11 @@ namespace LibGitUnite
         ///   The path to the git repository to open, can be either the path to the git directory (for non-bare repositories this
         ///   would be the ".git" folder inside the working directory) or the path to the working directory.
         /// </param>
-        public UniteRepository(string path) : base(path, null)
+        /// <param name="options">Runtime command line options specified</param>
+        public UniteRepository(string path, int options) : base(path, null)
         {
+            _options = options;
+
             _prepareBatch = Index.GetType().GetMethod(
                 "PrepareBatch",
                 BindingFlags.NonPublic | BindingFlags.Instance,
@@ -48,6 +60,7 @@ namespace LibGitUnite
         /// </summary>
         /// <param name="sourcePaths">List containing path of each file within the working directory which has to be renamed.</param>
         /// <param name="destinationPaths">List containing target path of each file within the working directory.</param>
+        /// ReSharper disable once MemberCanBePrivate.Global
         public void Unite(IEnumerable<string> sourcePaths, IEnumerable<string> destinationPaths)
         {
             if (sourcePaths == null)
@@ -66,14 +79,21 @@ namespace LibGitUnite
                 var from = keyValuePair.Key.Item1;
                 var to = keyValuePair.Value.Item1;
 
-                try
+                if (DryRunOnly)
                 {
-                    _removeFromIndex.Invoke(Index, new object[] {from});
-                    _addToIndex.Invoke(Index, new object[] {to});
+                    Console.WriteLine("proposed rename: {0} -> {1}", from, to);
                 }
-                catch (Exception ex)
+                else
                 {
-                    Console.WriteLine("error changing: {0} -> {1} [{2}]", from, to, ex.Message);
+                    try
+                    {
+                        _removeFromIndex.Invoke(Index, new object[] { from });
+                        _addToIndex.Invoke(Index, new object[] { to });
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("error changing: {0} -> {1} [{2}]", from, to, ex.Message);
+                    }
                 }
             }
 

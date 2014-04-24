@@ -11,12 +11,14 @@ namespace Git.Unite
     {
         static void Main(string[] args)
         {
-            var dryrun = false;
+            var options = GitUnite.OptionFlags.UniteDirectories | GitUnite.OptionFlags.UniteFiles;
             var showHelp = false;
             List<string> paths;
             var opts = new OptionSet
                 {
-                    {"dry-run", "dry run without making changes", v => dryrun = v != null},
+                    {"dry-run", "dry run without making changes", v => options |= v != null ? GitUnite.OptionFlags.DryRun : options},
+                    {"d|directory-only", "only perform directory case changes", v => options = v != null ? options ^ GitUnite.OptionFlags.UniteFiles : options},
+                    {"f|file-only", "only perform filename case changes", v => options = v != null ? options ^ GitUnite.OptionFlags.UniteDirectories : options},
                     {"h|help", "show this message and exit", v => showHelp = v != null}
                 };
 
@@ -49,7 +51,7 @@ namespace Git.Unite
 					return;
 				}
 				
-				GitUnite.Process(path,dryrun);
+				GitUnite.Process(path, options);
 			}
 		}
 
