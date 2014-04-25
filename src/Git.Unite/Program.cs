@@ -7,7 +7,7 @@ using LibGitUnite;
 
 namespace Git.Unite
 {
-    class Program
+    static class Program
     {
         static void Main(string[] args)
         {

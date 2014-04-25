@@ -11,14 +11,14 @@ namespace LibGitUnite
         private readonly MethodInfo _removeFromIndex;
         private readonly MethodInfo _addToIndex;
         private readonly MethodInfo _updatePhysicalIndex;
-        private readonly int _options;
+        private readonly GitUnite.OptionFlags _options;
 
         /// <summary>
         /// Perform a dry run (--dry-run) only and report proposed changes
         /// </summary>
         private bool DryRunOnly
         {
-            get { return (_options & GitUnite.OptionFlags.DryRun) == GitUnite.OptionFlags.DryRun; }
+            get { return _options.HasFlag(GitUnite.OptionFlags.DryRun); }
         }
 
         /// <summary>
@@ -29,7 +29,8 @@ namespace LibGitUnite
         ///   would be the ".git" folder inside the working directory) or the path to the working directory.
         /// </param>
         /// <param name="options">Runtime command line options specified</param>
-        public UniteRepository(string path, int options) : base(path, null)
+        public UniteRepository(string path, GitUnite.OptionFlags options)
+            : base(path, null)
         {
             _options = options;
 

@@ -10,20 +10,21 @@ namespace LibGitUnite
         /// <summary>
         /// Git.Unite Runtime Option Flags
         /// </summary>
-        public static class OptionFlags
+        [Flags]
+        public enum OptionFlags : short
         {
             /// <summary>
             /// Perform a dry run (--dry-run) only and report proposed changes
             /// </summary>
-            public const int DryRun = 1;
+            DryRun = 1,
             /// <summary>
             /// Process directory names for case changes
             /// </summary>
-            public const int UniteDirectories = 2;
+            UniteDirectories = 2,
             /// <summary>
             /// Process filenames for case changes
             /// </summary>
-            public const int UniteFiles = 4;
+            UniteFiles = 4
         }
 
         private const string Separator = "\\";
@@ -36,7 +37,7 @@ namespace LibGitUnite
         ///   would be the ".git" folder inside the working directory) or the path to the working directory.
         /// </param>
         /// <param name="options">Runtime command line options specified</param>
-        public static void Process(string gitPath, int options)
+        public static void Process(string gitPath, OptionFlags options)
         {
             var gitPathInfo = new DirectoryInfo(gitPath);
 
@@ -45,23 +46,12 @@ namespace LibGitUnite
                 // Build a list of directory names as seen by the host operating system
                 var folders = repo.GetHostDirectoryInfo(gitPathInfo);
 
-                if(options.IsEnabled(OptionFlags.UniteDirectories))
+                if(options.HasFlag(OptionFlags.UniteDirectories))
                     repo.UniteFolderCasing(folders);
 
-                if (options.IsEnabled(OptionFlags.UniteFiles))
+                if (options.HasFlag(OptionFlags.UniteFiles))
                     repo.UniteFilenameCasing(gitPathInfo, folders);
             }
-        }
-
-        /// <summary>
-        /// Check if option flag is enabled
-        /// </summary>
-        /// <param name="options">Bitmap of runtime options specified on the command line</param>
-        /// <param name="optionFlag"><see cref="OptionFlags"/> to check</param>
-        /// <returns><see cref="bool"/> of true if enabled</returns>
-        private static bool IsEnabled(this int options, int optionFlag)
-        {
-            return (options & optionFlag) == optionFlag;
         }
 
         /// <summary>
