@@ -67,7 +67,7 @@ namespace LibGitUnite
         {
             if (!folders.Any()) return;
 
-            var foldersFullPathMap = new HashSet<String>(folders.ConvertAll(s => s.FullName));
+            var foldersFullPathMap = new HashSet<String>(folders.Select(s => s.FullName));
             // Find all repository files with directory paths not found in the host OS folder collection
             var indexEntries =
                 repo.Index.Where(f => f.Path.LastIndexOf(Separator, StringComparison.Ordinal) != -1
@@ -101,8 +101,10 @@ namespace LibGitUnite
         /// <param name="folders"></param>
         private static void UniteFilenameCasing(this UniteRepository repo, DirectoryInfo gitPathInfo, List<DirectoryInfo> folders)
         {
-            var files = folders.GetAllFileInfos(gitPathInfo);
-            var indexFileEntries = repo.Index.Where(f => files.All(s => s.FullName.Replace(repo.Info.WorkingDirectory, string.Empty) != f.Path));
+            var files               = folders.GetAllFileInfos(gitPathInfo);
+            var filesName           = new HashSet<String>(files.Select(
+                s => s.FullName.Replace(repo.Info.WorkingDirectory, string.Empty)));
+            var indexFileEntries    = repo.Index.Where(f => !filesName.Contains(f.Path));
 
             foreach (var entry in indexFileEntries)
             {
