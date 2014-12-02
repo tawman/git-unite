@@ -24,10 +24,14 @@ namespace LibGitUnite
             /// <summary>
             /// Process filenames for case changes
             /// </summary>
-            UniteFiles = 4
+            UniteFiles = 4,
+            /// <summary>
+            /// Rename local directories/files instead of modifying index
+            /// </summary>
+            RenameLocal = 8,
         }
 
-        private const string Separator = "\\";
+        internal const string Separator = "\\";
 
         /// <summary>
         /// Unite the git repository index file paths with the same case the OS is using
@@ -63,11 +67,12 @@ namespace LibGitUnite
         {
             if (!folders.Any()) return;
 
+            var foldersFullPathMap = new HashSet<String>(folders.ConvertAll(s => s.FullName));
             // Find all repository files with directory paths not found in the host OS folder collection
             var indexEntries =
                 repo.Index.Where(f => f.Path.LastIndexOf(Separator, StringComparison.Ordinal) != -1
                                       &&
-                                      !folders.Any(s => s.FullName.Contains(f.Path.Substring(0, f.Path.LastIndexOf(Separator, StringComparison.Ordinal)))));
+                                      !foldersFullPathMap.Any(s => s.Contains(f.Path.Substring(0, f.Path.LastIndexOf(Separator, StringComparison.Ordinal)))));
 
             // Unite the casing of the repository file directory path with the casing seen by the host operating system
             foreach (var entry in indexEntries)

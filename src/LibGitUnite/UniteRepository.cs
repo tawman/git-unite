@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Linq;
 using LibGit2Sharp;
+using System.IO;
 
 namespace LibGitUnite
 {
@@ -19,6 +21,11 @@ namespace LibGitUnite
         private bool DryRunOnly
         {
             get { return _options.HasFlag(GitUnite.OptionFlags.DryRun); }
+        }
+        
+        private bool RenameLocal
+        {
+            get { return _options.HasFlag(GitUnite.OptionFlags.RenameLocal); }
         }
 
         /// <summary>
@@ -70,22 +77,47 @@ namespace LibGitUnite
             if (destinationPaths == null)
                 throw new ArgumentNullException("destinationPaths");
 
-            dynamic batch = _prepareBatch.Invoke(Index, new object[] { sourcePaths, destinationPaths });
+            var lst = sourcePaths.Zip(destinationPaths
+                                     ,(a, b) => new { Src = RenameLocal ? b : a
+                                                    , Dst = RenameLocal ? a : b });
+            
+            if (DryRunOnly) {
+                foreach (var kv in lst)
+                    Console.WriteLine("proposed rename: {0} -> {1}", kv.Src, kv.Dst);
+                
+                return;
+            }
 
-            if (batch.Count == 0)
-                throw new ArgumentNullException("sourcePaths");
-
-            foreach (var keyValuePair in batch)
-            {
-                var from = keyValuePair.Key.Item1;
-                var to = keyValuePair.Value.Item1;
-
-                if (DryRunOnly)
-                {
-                    Console.WriteLine("proposed rename: {0} -> {1}", from, to);
+            if (RenameLocal) {
+                Bullshit_StringString renameTemp = delegate(String a) {
+                    for (int i = 0;; ++i) {
+                        var pathTmp = a + i;
+                        
+                        try {
+                            File.Move(a, pathTmp);
+                            return pathTmp;
+                        } catch (IOException e) {
+                            if (!File.Exists(a)) throw e; // If it failed b/c 404 then don't catch
+                            // Ignore dest-already-exists, however
+                        }
+                    }
+                };
+                
+                foreach (var kv in lst) {
+                    Console.WriteLine("renaming local: {0} -> {1}", kv.Src, kv.Dst);
+                    var p = renameTemp(kv.Src);
+                    File.Move(p, kv.Dst);
                 }
-                else
+            } else {
+                dynamic batch = _prepareBatch.Invoke(Index, new object[] { sourcePaths, destinationPaths });
+
+                if (batch.Count == 0)
+                    throw new ArgumentNullException("sourcePaths");
+
+                foreach (var keyValuePair in batch)
                 {
+                    var from = keyValuePair.Key.Item1;
+                    var to = keyValuePair.Value.Item1;
                     try
                     {
                         _removeFromIndex.Invoke(Index, new object[] { from });
@@ -100,5 +132,6 @@ namespace LibGitUnite
                 }
             }
         }
+        private delegate String Bullshit_StringString(String a);
     }
 }
