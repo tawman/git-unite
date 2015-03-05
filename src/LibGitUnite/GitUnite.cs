@@ -76,11 +76,18 @@ namespace LibGitUnite
                 var filename = entry.Path.Substring(lastIndexOf + 1);
 
                 // Match host OS folder based on minimum length to find top level directory to target
-                var target = folders
-                                 .Where(x => x.FullName.ToLower().Contains(entry.Path.Substring(0, lastIndexOf).ToLower()))
-                                 .OrderBy(x => x.FullName.Length)
-                                 .First().FullName + Separator + filename;
+                var folder = folders
+                    .Where(x => x.FullName.ToLower().Contains(entry.Path.Substring(0, lastIndexOf).ToLower()))
+                    .OrderBy(x => x.FullName.Length)
+                    .FirstOrDefault();
 
+                if (folder == null)
+                {
+                    Console.WriteLine("Warning: unable to determine target for index entry [{0}]", entry.Path);
+                    continue;
+                };
+
+                var target = folder.FullName + Separator + filename;
                 var sourcePath = repo.Info.WorkingDirectory + entry.Path;
 
                 // Unite the git index with the correct OS folder

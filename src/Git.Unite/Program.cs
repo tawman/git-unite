@@ -42,18 +42,18 @@ namespace Git.Unite
 
             if(!paths.Any())
                 paths.Add(Directory.GetCurrentDirectory());
-			
-			foreach(string path in paths)
-			{
-				if(!Directory.Exists(path+"\\.git"))
-				{					
-					Console.WriteLine(path+" does not appear to be a valid git repository");
-					return;
-				}
-				
-				GitUnite.Process(path, options);
-			}
-		}
+            
+            foreach(var path in paths)
+            {
+                if(!Directory.Exists(path+"\\.git"))
+                {					
+                    Console.WriteLine(path+" does not appear to be a valid git repository");
+                    return;
+                }
+                
+                GitUnite.Process(path, options);
+            }
+        }
 
         static void ShowHelp(OptionSet opts)
         {
