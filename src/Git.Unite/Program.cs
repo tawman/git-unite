@@ -16,10 +16,16 @@ namespace Git.Unite
             List<string> paths;
             var opts = new OptionSet
                 {
-                    {"dry-run", "dry run without making changes", v => options |= v != null ? GitUnite.OptionFlags.DryRun : options},
-                    {"d|directory-only", "only perform directory case changes", v => options = v != null ? options ^ GitUnite.OptionFlags.UniteFiles : options},
-                    {"f|file-only", "only perform filename case changes", v => options = v != null ? options ^ GitUnite.OptionFlags.UniteDirectories : options},
-                    {"h|help", "show this message and exit", v => showHelp = v != null}
+                    {"dry-run", "dry run without making changes",
+                        v => options  |= v != null ? GitUnite.OptionFlags.DryRun : options},
+                    {"d|directory-only", "only perform directory case changes",
+                        v => { if (v != null) options = (options & ~GitUnite.OptionFlags.UniteFiles      ) | GitUnite.OptionFlags.UniteDirectories;}},
+                    {"f|file-only", "only perform filename case changes",
+                        v => { if (v != null) options = (options & ~GitUnite.OptionFlags.UniteDirectories) | GitUnite.OptionFlags.UniteFiles      ;}},
+                    {"r|rename-local", "rename local files/directories to match the repo",
+                        v => options  |= v != null ? GitUnite.OptionFlags.RenameLocal : options}, 
+                    {"h|help", "show this message and exit",
+                        v => showHelp  = v != null}
                 };
 
             try
