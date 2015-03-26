@@ -46,11 +46,10 @@ namespace Git.Unite
             foreach(var path in paths)
             {
                 if(!Directory.Exists(path+"\\.git"))
-                {					
+                {
                     Console.WriteLine(path+" does not appear to be a valid git repository");
                     return;
                 }
-                
                 GitUnite.Process(path, options);
             }
         }
