@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 
 namespace LibGitUnite
 {
@@ -29,6 +30,16 @@ namespace LibGitUnite
 
         private const string Separator = "\\";
 
+        private static FieldInfo FullNameField = typeof(FileSystemInfo).GetField(
+                            "FullPath",
+                             BindingFlags.Instance |
+                             BindingFlags.NonPublic);
+
+        private static string GetFullName(FileSystemInfo fsi)
+        {
+            return (string)FullNameField.GetValue(fsi);
+        }
+
         /// <summary>
         /// Unite the git repository index file paths with the same case the OS is using
         /// </summary>
@@ -41,7 +52,7 @@ namespace LibGitUnite
         {
             var gitPathInfo = new DirectoryInfo(gitPath);
 
-            using (var repo = new UniteRepository(gitPathInfo.FullName, options))
+            using (var repo = new UniteRepository(GetFullName(gitPathInfo), options))
             {
                 // Build a list of directory names as seen by the host operating system
                 var folders = repo.GetHostDirectoryInfo(gitPathInfo);
@@ -63,7 +74,7 @@ namespace LibGitUnite
         {
             if (!folders.Any()) return;
 
-            var foldersFullPathMap = new HashSet<String>(folders.ConvertAll(s => s.FullName));
+            var foldersFullPathMap = new HashSet<String>(folders.ConvertAll(s => GetFullName(s)));
 
             // Find all repository files with directory paths not found in the host OS folder collection
             var indexEntries =
@@ -79,8 +90,8 @@ namespace LibGitUnite
 
                 // Match host OS folder based on minimum length to find top level directory to target
                 var folder = folders
-                    .Where(x => x.FullName.ToLower().Contains(entry.Path.Substring(0, lastIndexOf).ToLower()))
-                    .OrderBy(x => x.FullName.Length)
+                    .Where(x => GetFullName(x).ToLower().Contains(entry.Path.Substring(0, lastIndexOf).ToLower()))
+                    .OrderBy(x => GetFullName(x).Length)
                     .FirstOrDefault();
 
                 if (folder == null)
@@ -89,7 +100,7 @@ namespace LibGitUnite
                     continue;
                 };
 
-                var target = folder.FullName + Separator + filename;
+                var target = GetFullName(folder) + Separator + filename;
                 var sourcePath = repo.Info.WorkingDirectory + entry.Path;
 
                 // Unite the git index with the correct OS folder
@@ -105,8 +116,13 @@ namespace LibGitUnite
         /// <param name="folders"></param>
         private static void UniteFilenameCasing(this UniteRepository repo, DirectoryInfo gitPathInfo, List<DirectoryInfo> folders)
         {
-            var files = folders.GetAllFileInfos(gitPathInfo);
-            var filesFullPathMap = new HashSet<String>(files.ConvertAll(s => s.FullName));
+            // The " " at the end of the Path.Combine is a trick to be sure there is a \ at the end of the path
+            // Otherwise, we will exclude files suche as .gitattributes
+            var dotGitFolderPath = Path.Combine(GetFullName(gitPathInfo), ".git", " ").TrimEnd();
+            var files = gitPathInfo.GetFiles("*", SearchOption.AllDirectories).Where(f => !GetFullName(f).StartsWith(dotGitFolderPath)).ToList();
+            var filesFullPathMap = new HashSet<String>(files.ConvertAll(s => GetFullName(s)));
+
+
             var indexFileEntries = repo.Index.Where(f => filesFullPathMap.All(s => s.Replace(repo.Info.WorkingDirectory, string.Empty) != f.Path));
 
             foreach (var entry in indexFileEntries)
@@ -114,11 +130,11 @@ namespace LibGitUnite
                 var sourcePath = repo.Info.WorkingDirectory + entry.Path;
 
                 // Match host OS filename based on full pathname ignoring case
-                var target = files.FirstOrDefault(f => String.Equals(f.FullName, sourcePath, StringComparison.CurrentCultureIgnoreCase));
+                var target = files.FirstOrDefault(f => String.Equals(GetFullName(f), sourcePath, StringComparison.CurrentCultureIgnoreCase));
                 if (target == null) continue;
 
                 // Unite the git index with the correct OS folder
-                repo.Unite(sourcePath, target.FullName);
+                repo.Unite(sourcePath, GetFullName(target));
             }
         }
 
@@ -135,7 +151,7 @@ namespace LibGitUnite
             try
             {
                 folderInfo = path.EnumerateDirectories("*", SearchOption.AllDirectories)
-                .Where(d => !d.FullName.ToLowerInvariant().StartsWith(repo.Info.Path.TrimEnd('\\').ToLowerInvariant()))
+                .Where(d => !GetFullName(d).ToLowerInvariant().StartsWith(repo.Info.Path.TrimEnd('\\').ToLowerInvariant()))
                 .ToList();
             }
             catch (Exception ex)
@@ -145,33 +161,6 @@ namespace LibGitUnite
             }
 
             return folderInfo;
-        }
-
-        /// <summary>
-        /// Get a list of files in all host operating system folders identified
-        /// </summary>
-        /// <param name="folders">A list of <see cref="DirectoryInfo"/> reported by host OS</param>
-        /// <param name="rootFolder"></param>
-        /// <returns>A list of <see cref="FileInfo"/> reported by host OS</returns>
-        /// ReSharper disable once ParameterTypeCanBeEnumerable.Local
-        private static List<FileInfo> GetAllFileInfos(this List<DirectoryInfo> folders, DirectoryInfo rootFolder)
-        {
-            var fileInfo = new List<FileInfo>();
-
-            try
-            {
-                fileInfo = folders
-                    .Union(new [] { rootFolder })
-                    .SelectMany(f => f.EnumerateFiles("*", SearchOption.TopDirectoryOnly))
-                    .ToList();
-            }
-            catch (Exception ex)
-            {
-                Console.Write("Git.Unite: ");
-                Console.WriteLine(ex.Message);
-            }
-
-            return fileInfo;
         }
     }
 }
