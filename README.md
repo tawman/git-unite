@@ -2,7 +2,7 @@ Git.Unite
 =========
 Git Unite is a utility that fixes case sensitive file names and paths present in a git repository index on Windows. Since Windows is not case sensitive, the git index case sensitivity issue does not manifest itself until browsing the code repository on GitHub or cloning the repository to a case sensitive file system on Linux.
 
-Introducing case sensitive file paths into the git index on a case insensitive operating system like Windows is easier than you think. A simple *git mv .\Where\Waldo where\is\Waldo* is all you need to create two separate paths in the git index, but the Windows working directory will only report one. There might be git config settings that help avoid this problem, but controlling the settings and behavior of 20+ contributors on a project team is nearly impossible.
+Introducing case sensitive file paths into the git index on a case insensitive operating system like Windows is easier than you think. A simple `git mv .\Where\Waldo where\is\Waldo` is all you need to create two separate paths in the git index, but the Windows working directory will only report one. There might be git config settings that help avoid this problem, but controlling the settings and behavior of 20+ contributors on a project team is nearly impossible.
 
 The problem is exacerbated when hundreds of files are moved during a repository layout reorganization. If the user moving the files is not careful, these case sensitive path names will pollute the git index but appear fine in the working directory. Cleaning up these case sensitive file path issues on Windows is tedious, and this is where Git Unite helps out.
 
@@ -32,13 +32,11 @@ Example Usage
 A more detailed example scenario and usage is available on my blog post [Git Unite - Fix Case Sensitive File Paths on Windows](http://www.woodcp.com/2013/01/git-unite-fix-case-sensitive-file-paths-on-windows/ "Wood Consulting Practice, LLC")
 How To Build It?
 ----------------
-From a command window run: *build.bat*
+Open a PowerShell window and run: `build.cmd`
 
-On some systems you will need to run 'set EnableNuGetPackageRestore=true' to succesfully compile.
+Otherwise, open the Solution file in Visual Studio and Build
 
-Otherwise, open the Solution file in Visual Studio 2010 and Build
-
-The binary will be in git-unite\src\Git.Unite\bin\Debug
+The binary will be in `git-unite\src\Git.Unite\bin\Debug`
 
 Thanks
 ------
