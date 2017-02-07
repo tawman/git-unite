@@ -50,8 +50,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="OptionFlags.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="GitUnite.cs" />
     <Compile Include="UniteRepository.cs" />
   </ItemGroup>
   <ItemGroup>

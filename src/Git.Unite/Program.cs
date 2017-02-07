@@ -11,14 +11,14 @@ namespace Git.Unite
     {
         static void Main(string[] args)
         {
-            var options = GitUnite.OptionFlags.UniteDirectories | GitUnite.OptionFlags.UniteFiles;
+            var options = OptionFlags.UniteDirectories | OptionFlags.UniteFiles;
             var showHelp = false;
             List<string> paths;
             var opts = new OptionSet
                 {
-                    {"dry-run", "dry run without making changes", v => options |= v != null ? GitUnite.OptionFlags.DryRun : options},
-                    {"d|directory-only", "only perform directory case changes", v => options = v != null ? options ^ GitUnite.OptionFlags.UniteFiles : options},
-                    {"f|file-only", "only perform filename case changes", v => options = v != null ? options ^ GitUnite.OptionFlags.UniteDirectories : options},
+                    {"dry-run", "dry run without making changes", v => options |= v != null ? OptionFlags.DryRun : options},
+                    {"d|directory-only", "only perform directory case changes", v => options = v != null ? options ^ OptionFlags.UniteFiles : options},
+                    {"f|file-only", "only perform filename case changes", v => options = v != null ? options ^ OptionFlags.UniteDirectories : options},
                     {"h|help", "show this message and exit", v => showHelp = v != null}
                 };
 
@@ -50,11 +50,11 @@ namespace Git.Unite
                     Console.WriteLine(path+" does not appear to be a valid git repository");
                     return;
                 }
-                GitUnite.Process(path, options);
+                new UniteRepository(path, options).Process().Dispose();
             }
         }
 
-        static void ShowHelp(OptionSet opts)
+        private static void ShowHelp(OptionSet opts)
         {
             Console.WriteLine("Usage: Git.Unite [OPTIONS]+ repository");
             Console.WriteLine("Unite the git repository index file paths with current Windows case usage.");
