@@ -5,7 +5,6 @@ namespace LibGitUnite
 {
     public class UniteRepository : IDisposable
     {
-        //private readonly MethodInfo _prepareBatch;
         private readonly GitUnite.OptionFlags _options;
         public Repository GitRepository { get; }
 
