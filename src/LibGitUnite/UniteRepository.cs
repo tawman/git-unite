@@ -116,7 +116,7 @@ namespace LibGitUnite
                 {
                     Console.WriteLine("Warning: unable to determine target for index entry [{0}]", entry.Path);
                     continue;
-                };
+                }
 
                 var target = folder.FullName + Separator + filename;
                 var sourcePath = _gitRepository.Info.WorkingDirectory + entry.Path;
