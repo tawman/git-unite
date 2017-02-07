@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using LibGit2Sharp;
 
 namespace LibGitUnite
@@ -13,6 +14,7 @@ namespace LibGitUnite
         private List<DirectoryInfo> _folderInfo = new List<DirectoryInfo>();
         private readonly Repository _gitRepository;
         private readonly DirectoryInfo _gitDirectoryInfo;
+        private static readonly FieldInfo FullNameField = typeof(FileSystemInfo).GetField("FullPath", BindingFlags.Instance | BindingFlags.NonPublic);
 
         /// <summary>
         /// Extended LibGit2Sharp.Repository with the Unite version of the Move command
@@ -25,7 +27,7 @@ namespace LibGitUnite
         public UniteRepository(string path, OptionFlags options)
         {
             _gitDirectoryInfo = new DirectoryInfo(path);
-            _gitRepository = new Repository(_gitDirectoryInfo.FullName);
+            _gitRepository = new Repository(GetFullName(_gitDirectoryInfo));
             _options = options;
         }
 
@@ -60,6 +62,16 @@ namespace LibGitUnite
         }
 
         /// <summary>
+        /// Get the FullName from long file names using the hidden property FullPath
+        /// </summary>
+        /// <param name="fsi"></param>
+        /// <returns>Full Name Field</returns>
+        private static string GetFullName(FileSystemInfo fsi)
+        {
+            return (string)FullNameField.GetValue(fsi);
+        }
+
+        /// <summary>
         /// Builds a list of directory names as seen by the host operating system
         /// </summary>
         /// <returns>A <see cref="UniteRepository"/> aware of directories reported by host OS</returns>
@@ -68,7 +80,7 @@ namespace LibGitUnite
             try
             {
                 _folderInfo = _gitDirectoryInfo.EnumerateDirectories("*", SearchOption.AllDirectories)
-                .Where(d => !d.FullName.ToLowerInvariant().StartsWith(_gitRepository.Info.Path.TrimEnd('\\').ToLowerInvariant()))
+                .Where(d => !GetFullName(d).ToLowerInvariant().StartsWith(_gitRepository.Info.Path.TrimEnd('\\').ToLowerInvariant()))
                 .ToList();
             }
             catch (Exception ex)
@@ -87,7 +99,7 @@ namespace LibGitUnite
         {
             if (!_options.HasFlag(OptionFlags.UniteDirectories) || !_folderInfo.Any()) return this;
 
-            var foldersFullPathMap = new HashSet<string>(_folderInfo.ConvertAll(s => s.FullName));
+            var foldersFullPathMap = new HashSet<string>(_folderInfo.ConvertAll(GetFullName));
 
             // Find all repository files with directory paths not found in the host OS folder collection
             var indexEntries =
@@ -103,8 +115,8 @@ namespace LibGitUnite
 
                 // Match host OS folder based on minimum length to find top level directory to target
                 var folder = _folderInfo
-                    .Where(x => x.FullName.ToLower().Contains(entry.Path.Substring(0, lastIndexOf).ToLower()))
-                    .OrderBy(x => x.FullName.Length)
+                    .Where(x => GetFullName(x).ToLower().Contains(entry.Path.Substring(0, lastIndexOf).ToLower()))
+                    .OrderBy(x => GetFullName(x).Length)
                     .FirstOrDefault();
 
                 if (folder == null)
@@ -113,7 +125,7 @@ namespace LibGitUnite
                     continue;
                 }
 
-                var target = folder.FullName + Separator + filename;
+                var target = GetFullName(folder) + Separator + filename;
                 var sourcePath = _gitRepository.Info.WorkingDirectory + entry.Path;
 
                 // Unite the git index with the correct OS folder
@@ -129,8 +141,11 @@ namespace LibGitUnite
         {
             if (!_options.HasFlag(OptionFlags.UniteFiles)) return this;
 
-            var files = GetAllFileInfos();
-            var filesFullPathMap = new HashSet<string>(files.ConvertAll(s => s.FullName));
+            // The " " at the end of the Path.Combine is a trick to be sure there is a \ at the end of the path
+            // Otherwise, we will exclude files such as .gitattributes
+            var dotGitFolderPath = Path.Combine(GetFullName(_gitDirectoryInfo), ".git", " ").TrimEnd();
+            var files = _gitDirectoryInfo.GetFiles("*", SearchOption.AllDirectories).Where(f => !GetFullName(f).StartsWith(dotGitFolderPath)).ToList();
+            var filesFullPathMap = new HashSet<string>(files.ConvertAll(GetFullName));
             var indexFileEntries = _gitRepository.Index.Where(f => filesFullPathMap.All(s => s.Replace(_gitRepository.Info.WorkingDirectory, string.Empty) != f.Path));
 
             foreach (var entry in indexFileEntries)
@@ -138,38 +153,13 @@ namespace LibGitUnite
                 var sourcePath = _gitRepository.Info.WorkingDirectory + entry.Path;
 
                 // Match host OS filename based on full pathname ignoring case
-                var target = files.FirstOrDefault(f => string.Equals(f.FullName, sourcePath, StringComparison.CurrentCultureIgnoreCase));
+                var target = files.FirstOrDefault(f => string.Equals(GetFullName(f), sourcePath, StringComparison.CurrentCultureIgnoreCase));
                 if (target == null) continue;
 
                 // Unite the git index with the correct OS folder
-                Unite(sourcePath, target.FullName);
+                Unite(sourcePath, GetFullName(target));
             }
             return this;
-        }
-
-        /// <summary>
-        /// Get a list of files in all host operating system folders identified
-        /// </summary>
-        /// <returns>A list of <see cref="FileInfo"/> reported by host OS</returns>
-        /// ReSharper disable once ParameterTypeCanBeEnumerable.Local
-        private List<FileInfo> GetAllFileInfos()
-        {
-            var fileInfo = new List<FileInfo>();
-
-            try
-            {
-                fileInfo = _folderInfo
-                    .Union(new[] { _gitDirectoryInfo })
-                    .SelectMany(f => f.EnumerateFiles("*", SearchOption.TopDirectoryOnly))
-                    .ToList();
-            }
-            catch (Exception ex)
-            {
-                Console.Write("Git.Unite: ");
-                Console.WriteLine(ex.Message);
-            }
-
-            return fileInfo;
         }
 
         public void Dispose()
