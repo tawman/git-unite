@@ -15,11 +15,6 @@ namespace LibGitUnite
         private readonly DirectoryInfo _gitDirectoryInfo;
 
         /// <summary>
-        /// Perform a dry run (--dry-run) only and report proposed changes
-        /// </summary>
-        private bool DryRunOnly => _options.HasFlag(OptionFlags.DryRun);
-
-        /// <summary>
         /// Extended LibGit2Sharp.Repository with the Unite version of the Move command
         /// </summary>
         /// <param name = "path">
@@ -46,7 +41,7 @@ namespace LibGitUnite
         /// <param name = "destinationPath">The target path of the file within the working directory.</param>
         public void Unite(string sourcePath, string destinationPath)
         {
-            if (DryRunOnly)
+            if (_options.HasFlag(OptionFlags.DryRun))
             {
                 Console.WriteLine("proposed rename: {0} -> {1}", sourcePath, destinationPath);
                 return;
