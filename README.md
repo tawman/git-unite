@@ -36,7 +36,7 @@ Open a PowerShell window and run: `build.cmd`
 
 Otherwise, open the Solution file in Visual Studio and Build
 
-The binary will be in git-unite\src\Git.Unite\bin\Debug
+The binary will be in `git-unite\src\Git.Unite\bin\Debug`
 
 Thanks
 ------
