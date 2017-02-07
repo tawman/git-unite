@@ -67,7 +67,7 @@ namespace LibGitUnite
 
             // Find all repository files with directory paths not found in the host OS folder collection
             var indexEntries =
-                repo.Index.Where(f => f.Path.LastIndexOf(Separator, StringComparison.Ordinal) != -1
+                repo.GitRepository.Index.Where(f => f.Path.LastIndexOf(Separator, StringComparison.Ordinal) != -1
                                       &&
                                       !foldersFullPathMap.Any(s => s.Contains(f.Path.Substring(0, f.Path.LastIndexOf(Separator, StringComparison.Ordinal)))));
 
@@ -90,7 +90,7 @@ namespace LibGitUnite
                 };
 
                 var target = folder.FullName + Separator + filename;
-                var sourcePath = repo.Info.WorkingDirectory + entry.Path;
+                var sourcePath = repo.GitRepository.Info.WorkingDirectory + entry.Path;
 
                 // Unite the git index with the correct OS folder
                 repo.Unite(sourcePath, target);
@@ -107,11 +107,11 @@ namespace LibGitUnite
         {
             var files = folders.GetAllFileInfos(gitPathInfo);
             var filesFullPathMap = new HashSet<String>(files.ConvertAll(s => s.FullName));
-            var indexFileEntries = repo.Index.Where(f => filesFullPathMap.All(s => s.Replace(repo.Info.WorkingDirectory, string.Empty) != f.Path));
+            var indexFileEntries = repo.GitRepository.Index.Where(f => filesFullPathMap.All(s => s.Replace(repo.GitRepository.Info.WorkingDirectory, string.Empty) != f.Path));
 
             foreach (var entry in indexFileEntries)
             {
-                var sourcePath = repo.Info.WorkingDirectory + entry.Path;
+                var sourcePath = repo.GitRepository.Info.WorkingDirectory + entry.Path;
 
                 // Match host OS filename based on full pathname ignoring case
                 var target = files.FirstOrDefault(f => String.Equals(f.FullName, sourcePath, StringComparison.CurrentCultureIgnoreCase));
@@ -135,7 +135,7 @@ namespace LibGitUnite
             try
             {
                 folderInfo = path.EnumerateDirectories("*", SearchOption.AllDirectories)
-                .Where(d => !d.FullName.ToLowerInvariant().StartsWith(repo.Info.Path.TrimEnd('\\').ToLowerInvariant()))
+                .Where(d => !d.FullName.ToLowerInvariant().StartsWith(repo.GitRepository.Info.Path.TrimEnd('\\').ToLowerInvariant()))
                 .ToList();
             }
             catch (Exception ex)

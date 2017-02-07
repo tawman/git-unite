@@ -5,21 +5,19 @@ using LibGit2Sharp;
 
 namespace LibGitUnite
 {
-    public class UniteRepository : Repository
+    public class UniteRepository : IDisposable
     {
         private readonly MethodInfo _prepareBatch;
         private readonly MethodInfo _removeFromIndex;
         private readonly MethodInfo _addToIndex;
         private readonly MethodInfo _updatePhysicalIndex;
         private readonly GitUnite.OptionFlags _options;
+        public Repository GitRepository { get; private set; }
 
         /// <summary>
         /// Perform a dry run (--dry-run) only and report proposed changes
         /// </summary>
-        private bool DryRunOnly
-        {
-            get { return _options.HasFlag(GitUnite.OptionFlags.DryRun); }
-        }
+        private bool DryRunOnly => _options.HasFlag(GitUnite.OptionFlags.DryRun);
 
         /// <summary>
         /// Extended LibGit2Sharp.Repository with the Unite version of the Move command
@@ -30,20 +28,20 @@ namespace LibGitUnite
         /// </param>
         /// <param name="options">Runtime command line options specified</param>
         public UniteRepository(string path, GitUnite.OptionFlags options)
-            : base(path, null)
         {
+            GitRepository = new Repository(path);
             _options = options;
 
-            _prepareBatch = Index.GetType().GetMethod(
+            _prepareBatch = GitRepository.Index.GetType().GetMethod(
                 "PrepareBatch",
                 BindingFlags.NonPublic | BindingFlags.Instance,
                 null,
                 new[] { typeof(IEnumerable<string>), typeof(IEnumerable<string>) },
                 null);
 
-            _removeFromIndex = Index.GetType().GetMethod("RemoveFromIndex", BindingFlags.NonPublic | BindingFlags.Instance);
-            _addToIndex = Index.GetType().GetMethod("AddToIndex", BindingFlags.NonPublic | BindingFlags.Instance);
-            _updatePhysicalIndex = Index.GetType().GetMethod("UpdatePhysicalIndex", BindingFlags.NonPublic | BindingFlags.Instance);
+            _removeFromIndex = GitRepository.Index.GetType().GetMethod("RemoveFromIndex", BindingFlags.NonPublic | BindingFlags.Instance);
+            _addToIndex = GitRepository.Index.GetType().GetMethod("AddToIndex", BindingFlags.NonPublic | BindingFlags.Instance);
+            _updatePhysicalIndex = GitRepository.Index.GetType().GetMethod("UpdatePhysicalIndex", BindingFlags.NonPublic | BindingFlags.Instance);
         }
 
         /// <summary>
@@ -70,7 +68,7 @@ namespace LibGitUnite
             if (destinationPaths == null)
                 throw new ArgumentNullException("destinationPaths");
 
-            dynamic batch = _prepareBatch.Invoke(Index, new object[] { sourcePaths, destinationPaths });
+            dynamic batch = _prepareBatch.Invoke(GitRepository.Index, new object[] { sourcePaths, destinationPaths });
 
             if (batch.Count == 0)
                 throw new ArgumentNullException("sourcePaths");
@@ -88,17 +86,22 @@ namespace LibGitUnite
                 {
                     try
                     {
-                        _removeFromIndex.Invoke(Index, new object[] { from });
-                        _addToIndex.Invoke(Index, new object[] { to });
+                        _removeFromIndex.Invoke(GitRepository.Index, new object[] { from });
+                        _addToIndex.Invoke(GitRepository.Index, new object[] { to });
                     }
                     catch (Exception ex)
                     {
                         Console.WriteLine("error changing: {0} -> {1} [{2}]", from, to, ex.Message);
                     }
 
-                    _updatePhysicalIndex.Invoke(Index, new object[] { });
+                    _updatePhysicalIndex.Invoke(GitRepository.Index, new object[] { });
                 }
             }
+        }
+
+        public void Dispose()
+        {
+            GitRepository?.Dispose();
         }
     }
 }
