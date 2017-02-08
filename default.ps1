@@ -10,7 +10,7 @@ task Test -depends Compile {
 
 }
 
-task Compile -depends Clean, Restore {
+task Compile -depends Clean {
   Exec { msbuild /t:build /v:n /p:Configuration=$config $sln }
 }
 
