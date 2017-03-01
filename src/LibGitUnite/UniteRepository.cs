@@ -62,6 +62,57 @@ namespace LibGitUnite
         }
 
         /// <summary>
+        /// Modified version of LibGit2Sharp.Index.Move without the OS file system checks to unite file with proper case path
+        /// </summary>
+        /// <param name = "indexChanges">The path changes required.</param>
+        public void Unite(Dictionary<string, string> indexChanges)
+        {
+            if (!indexChanges.Any()) return;
+
+            if (_options.HasFlag(OptionFlags.DryRun))
+            {
+                foreach (var indexChange in indexChanges)
+                {
+                    Console.WriteLine("proposed rename: {0} -> {1}", indexChange.Key, indexChange.Value);
+                }
+                return;
+            }
+            RemoveIndexEntries(indexChanges);
+            AddIndexEntries(indexChanges);
+            _gitRepository.Index.Write();
+        }
+
+        private void AddIndexEntries(Dictionary<string, string> indexChanges)
+        {
+            foreach (var indexChange in indexChanges)
+            {
+                try
+                {
+                    _gitRepository.Index.Add(indexChange.Value.Replace(_gitRepository.Info.WorkingDirectory, string.Empty));
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("error changing: {0} -> {1} [{2}]", indexChange.Key, indexChange.Value, ex.Message);
+                }
+            }
+        }
+
+        private void RemoveIndexEntries(Dictionary<string, string> indexChanges)
+        {
+            foreach (var indexChange in indexChanges)
+            {
+                try
+                {
+                    _gitRepository.Index.Remove(indexChange.Key.Replace(_gitRepository.Info.WorkingDirectory, string.Empty));
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("error changing: {0} -> {1} [{2}]", indexChange.Key, indexChange.Value, ex.Message);
+                }
+            }
+        }
+
+        /// <summary>
         /// Get the FullName from long file names using the hidden property FullPath
         /// </summary>
         /// <param name="fsi"></param>
@@ -107,6 +158,9 @@ namespace LibGitUnite
                                       &&
                                       !foldersFullPathMap.Any(s => s.Contains(f.Path.Substring(0, f.Path.LastIndexOf(Separator, StringComparison.Ordinal)))));
 
+            // Build manifest of directory changes in order to remove all entries first before adding due to git internal handling of adds with existing directory entries
+            var indexChanges = new Dictionary<string, string>();
+
             // Unite the casing of the repository file directory path with the casing seen by the host operating system
             foreach (var entry in indexEntries)
             {
@@ -127,10 +181,12 @@ namespace LibGitUnite
 
                 var target = GetFullName(folder) + Separator + filename;
                 var sourcePath = _gitRepository.Info.WorkingDirectory + entry.Path;
-
-                // Unite the git index with the correct OS folder
-                Unite(sourcePath, target);
+                indexChanges[sourcePath] = target;
             }
+
+            // Unite the git index with the correct OS folder
+            Unite(indexChanges);
+
             return this;
         }
 
