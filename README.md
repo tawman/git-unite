@@ -30,6 +30,7 @@ Example Usage
     #
 
 A more detailed example scenario and usage is available on my blog post [Git Unite - Fix Case Sensitive File Paths on Windows](http://www.woodcp.com/2013/01/git-unite-fix-case-sensitive-file-paths-on-windows/ "Wood Consulting Practice, LLC")
+
 How To Build It?
 ----------------
 Open a PowerShell window and run: `build.cmd`
