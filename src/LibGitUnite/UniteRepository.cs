@@ -236,7 +236,8 @@ namespace LibGitUnite
             var dotGitFolderPath = Path.Combine(GetFullName(_gitDirectoryInfo), ".git", " ").TrimEnd();
             var files = _gitDirectoryInfo.GetFiles("*", SearchOption.AllDirectories).Where(f => !GetFullName(f).StartsWith(dotGitFolderPath)).ToList();
             var filesFullPathMap = new HashSet<string>(files.ConvertAll(GetFullName));
-            var indexFileEntries = _gitRepository.Index.Where(f => filesFullPathMap.All(s => s.Replace(_gitRepository.Info.WorkingDirectory, string.Empty) != f.Path));
+            var strippedPathMap = new HashSet<string>(filesFullPathMap.Select(x => x.Replace(_gitRepository.Info.WorkingDirectory, string.Empty).ToString()));
+            var indexFileEntries = _gitRepository.Index.Where(f => strippedPathMap.All(s => s != f.Path));
 
             foreach (var entry in indexFileEntries)
             {
