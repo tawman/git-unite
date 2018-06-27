@@ -45,15 +45,30 @@ namespace LibGitUnite
         {
             if (_options.HasFlag(OptionFlags.DryRun))
             {
-                Console.WriteLine("proposed rename: {0} -> {1}", sourcePath, destinationPath);
+                if (_options.HasFlag(OptionFlags.RenameEntriesInHostOS))
+                {
+                    Console.WriteLine("proposed rename local file: {0} -> {1}", destinationPath, sourcePath);
+                }
+                else
+                {
+                    Console.WriteLine("proposed rename: {0} -> {1}", sourcePath, destinationPath);
+                }
                 return;
             }
 
             try
             {
-                _gitRepository.Index.Remove(sourcePath.Replace(_gitRepository.Info.WorkingDirectory, string.Empty));
-                _gitRepository.Index.Add(destinationPath.Replace(_gitRepository.Info.WorkingDirectory, string.Empty));
-                _gitRepository.Index.Write();
+                if (_options.HasFlag(OptionFlags.RenameEntriesInHostOS))
+                {
+                    File.Move(destinationPath, sourcePath);
+                    Console.WriteLine("rename local file: {0} -> {1}", destinationPath, sourcePath);
+                }
+                else
+                {
+                    _gitRepository.Index.Remove(sourcePath.Replace(_gitRepository.Info.WorkingDirectory, string.Empty));
+                    _gitRepository.Index.Add(destinationPath.Replace(_gitRepository.Info.WorkingDirectory, string.Empty));
+                    _gitRepository.Index.Write();
+                }
             }
             catch (Exception ex)
             {
@@ -73,13 +88,32 @@ namespace LibGitUnite
             {
                 foreach (var indexChange in indexChanges)
                 {
-                    Console.WriteLine("proposed rename: {0} -> {1}", indexChange.Key, indexChange.Value);
+                    if (_options.HasFlag(OptionFlags.RenameEntriesInHostOS))
+                    {
+                        Console.WriteLine("proposed rename local directory: {0} -> {1}", indexChange.Value, indexChange.Key);
+                    }
+                    else
+                    {
+                        Console.WriteLine("proposed rename: {0} -> {1}", indexChange.Key, indexChange.Value);
+                    }
                 }
                 return;
             }
-            RemoveIndexEntries(indexChanges);
-            AddIndexEntries(indexChanges);
-            _gitRepository.Index.Write();
+
+            if (_options.HasFlag(OptionFlags.RenameEntriesInHostOS))
+            {
+                foreach (var indexChange in indexChanges)
+                {
+                    Directory.Move(indexChange.Value, indexChange.Key);
+                    Console.WriteLine("rename local directory: {0} -> {1}", indexChange.Value, indexChange.Key);
+                }
+            }
+            else 
+            {
+                RemoveIndexEntries(indexChanges);
+                AddIndexEntries(indexChanges);
+                _gitRepository.Index.Write();
+            }
         }
 
         private void AddIndexEntries(Dictionary<string, string> indexChanges)
@@ -202,11 +236,12 @@ namespace LibGitUnite
             var dotGitFolderPath = Path.Combine(GetFullName(_gitDirectoryInfo), ".git", " ").TrimEnd();
             var files = _gitDirectoryInfo.GetFiles("*", SearchOption.AllDirectories).Where(f => !GetFullName(f).StartsWith(dotGitFolderPath)).ToList();
             var filesFullPathMap = new HashSet<string>(files.ConvertAll(GetFullName));
-            var indexFileEntries = _gitRepository.Index.Where(f => filesFullPathMap.All(s => s.Replace(_gitRepository.Info.WorkingDirectory, string.Empty) != f.Path));
-
+            var strippedPathMap = new HashSet<string>(filesFullPathMap.Select(x => x.Replace(_gitRepository.Info.WorkingDirectory, string.Empty).ToString()));
+            var indexFileEntries = _gitRepository.Index.Select(x => x.Path).Except(strippedPathMap);
+            
             foreach (var entry in indexFileEntries)
             {
-                var sourcePath = _gitRepository.Info.WorkingDirectory + entry.Path;
+                var sourcePath = _gitRepository.Info.WorkingDirectory + entry;
 
                 // Match host OS filename based on full pathname ignoring case
                 var target = files.FirstOrDefault(f => string.Equals(GetFullName(f), sourcePath, StringComparison.CurrentCultureIgnoreCase));

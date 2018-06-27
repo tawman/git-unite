@@ -19,6 +19,10 @@ namespace LibGitUnite
         /// <summary>
         /// Process filenames for case changes
         /// </summary>
-        UniteFiles = 4
+        UniteFiles = 4,
+        /// <summary>
+        /// Rename files in host OS file system to make them as they are in git index
+        /// </summary>
+        RenameEntriesInHostOS = 8
     }
 }
