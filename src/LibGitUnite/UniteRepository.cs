@@ -45,15 +45,30 @@ namespace LibGitUnite
         {
             if (_options.HasFlag(OptionFlags.DryRun))
             {
-                Console.WriteLine("proposed rename: {0} -> {1}", sourcePath, destinationPath);
+                if (_options.HasFlag(OptionFlags.RenameEntriesInHostOS))
+                {
+                    Console.WriteLine("proposed rename local file: {0} -> {1}", destinationPath, sourcePath);
+                }
+                else
+                {
+                    Console.WriteLine("proposed rename: {0} -> {1}", sourcePath, destinationPath);
+                }
                 return;
             }
 
             try
             {
-                _gitRepository.Index.Remove(sourcePath.Replace(_gitRepository.Info.WorkingDirectory, string.Empty));
-                _gitRepository.Index.Add(destinationPath.Replace(_gitRepository.Info.WorkingDirectory, string.Empty));
-                _gitRepository.Index.Write();
+                if (_options.HasFlag(OptionFlags.RenameEntriesInHostOS))
+                {
+                    File.Move(destinationPath, sourcePath);
+                    Console.WriteLine("rename local file: {0} -> {1}", destinationPath, sourcePath);
+                }
+                else
+                {
+                    _gitRepository.Index.Remove(sourcePath.Replace(_gitRepository.Info.WorkingDirectory, string.Empty));
+                    _gitRepository.Index.Add(destinationPath.Replace(_gitRepository.Info.WorkingDirectory, string.Empty));
+                    _gitRepository.Index.Write();
+                }
             }
             catch (Exception ex)
             {
@@ -73,13 +88,32 @@ namespace LibGitUnite
             {
                 foreach (var indexChange in indexChanges)
                 {
-                    Console.WriteLine("proposed rename: {0} -> {1}", indexChange.Key, indexChange.Value);
+                    if (_options.HasFlag(OptionFlags.RenameEntriesInHostOS))
+                    {
+                        Console.WriteLine("proposed rename local directory: {0} -> {1}", indexChange.Value, indexChange.Key);
+                    }
+                    else
+                    {
+                        Console.WriteLine("proposed rename: {0} -> {1}", indexChange.Key, indexChange.Value);
+                    }
                 }
                 return;
             }
-            RemoveIndexEntries(indexChanges);
-            AddIndexEntries(indexChanges);
-            _gitRepository.Index.Write();
+
+            if (_options.HasFlag(OptionFlags.RenameEntriesInHostOS))
+            {
+                foreach (var indexChange in indexChanges)
+                {
+                    Directory.Move(indexChange.Value, indexChange.Key);
+                    Console.WriteLine("rename local directory: {0} -> {1}", indexChange.Value, indexChange.Key);
+                }
+            }
+            else 
+            {
+                RemoveIndexEntries(indexChanges);
+                AddIndexEntries(indexChanges);
+                _gitRepository.Index.Write();
+            }
         }
 
         private void AddIndexEntries(Dictionary<string, string> indexChanges)

@@ -19,6 +19,7 @@ namespace Git.Unite
                     {"dry-run", "dry run without making changes", v => options |= v != null ? OptionFlags.DryRun : options},
                     {"d|directory-only", "only perform directory case changes", v => options = v != null ? options ^ OptionFlags.UniteFiles : options},
                     {"f|file-only", "only perform filename case changes", v => options = v != null ? options ^ OptionFlags.UniteDirectories : options},
+                    {"o|os-rename", "Rename files in host OS file system to make them as they are in git index", v => options = v != null ? options ^ OptionFlags.RenameEntriesInHostOS : options},
                     {"h|help", "show this message and exit", v => showHelp = v != null}
                 };
 
